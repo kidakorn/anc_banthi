@@ -1,4 +1,5 @@
-// Global state
+// ================== ส่วนที่ 1: Global State & Initialization ==================
+// (ควรแยกไฟล์ js/state.js, js/init.js)
 const state = {
     currentPage: 1,
     itemsPerPage: 10,
@@ -6,10 +7,11 @@ const state = {
     totalRecords: 0
 };
 
-// Main initialization
+// ================== ส่วนที่ 2: Main Initialization & Event Binding ==================
+// (ควรแยกไฟล์ js/init.js, js/events.js)
 document.addEventListener('DOMContentLoaded', () => {
-    initializeEventListeners();
-    setupModalEvents();
+    initializeEventListeners(); // (ซ้ำกับด้านล่าง, ควรเรียกแค่ที่เดียว)
+    setupModalEvents();         // (ซ้ำกับด้านล่าง, ควรเรียกแค่ที่เดียว)
 
     // ประกาศตัวแปรครั้งเดียวที่จุดเริ่มต้น
     const searchInput = document.getElementById('searchInput');
@@ -163,6 +165,56 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ================== ส่วนที่ 3: Data Loading & Table Update ==================
+// (ควรแยกไฟล์ js/dataLoader.js)
+function loadData(page = 1) {
+    const search = document.getElementById('searchInput').value.trim();
+    const filter = document.getElementById('statusFilter').value;
+    const limit = document.getElementById('entriesPerPage').value;
+
+    const params = new URLSearchParams({
+        search,
+        filter,
+        limit,
+        page
+    });
+
+    fetch(`home.php?${params.toString()}`)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const newDocument = parser.parseFromString(html, 'text/html');
+
+            // อัปเดตตาราง
+            const tableContainer = document.querySelector('.table-container');
+            const newTable = newDocument.querySelector('.table-container table');
+            if (tableContainer && newTable) {
+                tableContainer.innerHTML = newTable.outerHTML;
+                setupModalEvents();
+            }
+
+            // อัปเดต pagination
+            const paginationContainer = document.querySelector('nav[aria-label="Pagination"]');
+            const newPagination = newDocument.querySelector('nav[aria-label="Pagination"]');
+            if (paginationContainer && newPagination) {
+                paginationContainer.innerHTML = newPagination.innerHTML;
+            }
+
+            // อัปเดตจำนวนรายการ
+            const startEntry = newDocument.getElementById('startEntry');
+            const endEntry = newDocument.getElementById('endEntry');
+            const totalEntries = newDocument.getElementById('totalEntries');
+            if (startEntry && endEntry && totalEntries) {
+                document.getElementById('startEntry').textContent = startEntry.textContent;
+                document.getElementById('endEntry').textContent = endEntry.textContent;
+                document.getElementById('totalEntries').textContent = totalEntries.textContent;
+            }
+        })
+        .catch(error => console.error('Error loading data:', error));
+}
+
+// ================== ส่วนที่ 4: Event Listeners หลัก ==================
+// (ควรแยกไฟล์ js/events.js)
 function initializeEventListeners() {
     // Filter buttons
     document.getElementById('todayButton')?.addEventListener('click', () => {
@@ -205,7 +257,8 @@ function initializeEventListeners() {
 
 }
 
-// Modal Management
+// ================== ส่วนที่ 5: Modal Management ==================
+// (ควรแยกไฟล์ js/modal.js)
 function setupModalEvents() {
     const elements = {
         modal: document.getElementById('showModal'),
@@ -376,155 +429,8 @@ function populateRiskChecklist(riskString) {
     });
 }
 
-// Data Management
-function loadData(filter = 'all', search = '') {
-    state.filter = filter;
-    state.search = search;
-    showSpinner(true);
-
-    const params = new URLSearchParams({
-        filter: state.filter,
-        page: state.currentPage,
-        limit: state.itemsPerPage,
-        search: state.search
-    });
-
-    fetch(`home.php?${params.toString()}`)
-        .then(response => response.text())
-        .then(html => {
-            const tableContainer = document.querySelector('.table-container');
-            if (!tableContainer) {
-                console.error('Table container not found');
-                return;
-            }
-
-            // ล้างข้อมูลเก่าใน table-container
-            tableContainer.innerHTML = '';
-
-            // เพิ่มข้อมูลใหม่ที่โหลดมา
-            const parser = new DOMParser();
-            const newDocument = parser.parseFromString(html, 'text/html');
-            const newTable = newDocument.querySelector('.table-container table');
-            if (newTable) {
-                tableContainer.appendChild(newTable);
-            } else {
-                console.error('Failed to load table content');
-            }
-
-            // ตั้งค่า modal ใหม่หลังจากโหลดข้อมูล
-            setupModalEvents();
-
-            // อัปเดต Pagination
-            const paginationContainer = document.getElementById('pagination');
-            const newPagination = newDocument.getElementById('pagination');
-            if (paginationContainer && newPagination) {
-                paginationContainer.innerHTML = newPagination.innerHTML;
-                setupPagination();
-            }
-        })
-        .catch(error => {
-            console.error('Error loading data:', error);
-        })
-        .finally(() => {
-            showSpinner(false);
-        });
-}
-
-// updateFilterButtons
-function updateFilterButtons(activeFilter) {
-    const buttons = {
-        today: document.getElementById('todayButton'),
-        all: document.getElementById('allListButton')
-    };
-}
-
-function getFilterName(filter) {
-    switch (filter) {
-        case 'today': return 'วันนี้';
-        case 'new': return 'ใหม่';
-        default: return 'ทั้งหมด';
-    }
-}
-
-function showSpinner(show) {
-    const spinner = document.getElementById('loadingSpinner');
-    if (spinner) {
-        spinner.style.display = show ? 'flex' : 'none';
-    }
-}
-
-function updateLastUpdate() {
-    const lastUpdate = document.getElementById('lastUpdate');
-    if (lastUpdate) {
-        lastUpdate.textContent = new Date().toLocaleString('th-TH');
-    }
-}
-
-function toggleFilterButtons(disabled) {
-    ['todayButton', 'allListButton', 'newDataButton', 'openExampleModal'].forEach(id => {
-        const button = document.getElementById(id);
-        if (button) {
-            button.disabled = disabled;
-            button.classList.toggle('opacity-50', disabled);
-        }
-    });
-}
-
-function updateFilterButtons(activeFilter) {
-    const buttons = {
-        today: document.getElementById('todayButton'),
-        all: document.getElementById('allListButton')
-    };
-}
-
-// Utility Functions
-function toggleModal(modal, show) {
-    modal.classList.toggle('hidden', !show);
-    modal.classList.toggle('flex', show);
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-
-function updateUrlState() {
-    const params = new URLSearchParams();
-    if (state.currentPage !== 1) params.set('page', state.currentPage);
-    if (state.itemsPerPage !== 10) params.set('limit', state.itemsPerPage);
-    if (state.filter !== 'all') params.set('filter', state.filter);
-
-    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
-    history.replaceState(null, '', newUrl);
-}
-
-// Table Filtering
-function filterTable() {
-    const searchText = document.getElementById('searchInput')?.value || '';
-    const statusFilter = document.getElementById('statusFilter')?.value || '';
-    state.currentPage = 1; // รีเซ็ตไปที่หน้าแรกเมื่อมีการค้นหาใหม่
-    loadData(statusFilter, searchText);
-}
-
-function handleRefresh() {
-    const button = document.getElementById('refreshData');
-    if (!button) return;
-
-    button.disabled = true;
-    const originalContent = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
-
-    loadData().finally(() => {
-        button.disabled = false;
-        button.innerHTML = originalContent;
-        document.getElementById('lastUpdate').textContent =
-            new Date().toLocaleString('th-TH');
-    });
-}
-
+// ================== ส่วนที่ 6: Pagination ==================
+// (ควรแยกไฟล์ js/pagination.js)
 function setupPagination() {
     const totalPages = Math.ceil(state.totalRecords / state.itemsPerPage);
     const paginationContainer = document.getElementById('pagination');
@@ -561,30 +467,6 @@ function attachPaginationEventListeners(totalPages) {
                 state.currentPage = page;
                 filterTable();
             }
-        });
-    });
-}
-
-function attachPaginationEventListeners(totalPages) {
-    const prevButton = document.getElementById('prevPage');
-    const nextButton = document.getElementById('nextPage');
-
-    prevButton?.addEventListener('click', () => {
-        if (state.currentPage > 1) {
-            goToPage(state.currentPage - 1);
-        }
-    });
-
-    nextButton?.addEventListener('click', () => {
-        if (state.currentPage < totalPages) {
-            goToPage(state.currentPage + 1);
-        }
-    });
-
-    // Add click events for page numbers
-    document.querySelectorAll('.page-number').forEach(button => {
-        button.addEventListener('click', (e) => {
-            goToPage(parseInt(e.target.dataset.page));
         });
     });
 }
@@ -651,38 +533,50 @@ function goToPage(page) {
     loadData();
 }
 
-function updateDisplayInfo() {
-    const start = Math.min(((state.currentPage - 1) * state.itemsPerPage) + 1, state.totalRecords);
-    const end = Math.min(state.currentPage * state.itemsPerPage, state.totalRecords);
+// ================== ส่วนที่ 7: Filter & Search ==================
+// (ควรแยกไฟล์ js/filter.js)
+function filterTable() {
+    const searchText = document.getElementById('searchInput')?.value || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+    state.currentPage = 1; // รีเซ็ตไปที่หน้าแรกเมื่อมีการค้นหาใหม่
+    loadData(statusFilter, searchText);
+}
 
-    const elements = {
-        startEntry: document.getElementById('startEntry'),
-        endEntry: document.getElementById('endEntry'),
-        totalEntries: document.getElementById('totalEntries'),
-        pageInfo: document.getElementById('pageInfo')
+function updateFilterButtons(activeFilter) {
+    const buttons = {
+        today: document.getElementById('todayButton'),
+        all: document.getElementById('allListButton')
     };
+}
 
-    if (elements.startEntry) elements.startEntry.textContent = start;
-    if (elements.endEntry) elements.endEntry.textContent = end;
-    if (elements.totalEntries) elements.totalEntries.textContent = state.totalRecords;
-    if (elements.pageInfo) {
-        elements.pageInfo.textContent =
-            `หน้า ${state.currentPage} จาก ${Math.ceil(state.totalRecords / state.itemsPerPage)}`;
+function getFilterName(filter) {
+    switch (filter) {
+        case 'today': return 'วันนี้';
+        case 'new': return 'ใหม่';
+        default: return 'ทั้งหมด';
     }
 }
 
-function setupAlertMessages() {
-    const alertContainer = document.getElementById('alert-container');
-    if (alertContainer?.children.length > 0) {
-        const alertMessage = alertContainer.querySelector('.alert-message');
-        if (alertMessage) {
-            setTimeout(() => {
-                alertMessage.style.opacity = '0';
-                alertMessage.style.transform = 'translateY(-20px)';
-                setTimeout(() => alertMessage.remove(), 300);
-            }, 5000);
-        }
-    }
+function initializeFilterButtons() {
+    // ปุ่มกรอง Today
+    document.getElementById('todayButton')?.addEventListener('click', () => {
+        updateFilterButtons('today');
+    });
+
+    // ปุ่มแสดงทั้งหมด
+    document.getElementById('allListButton')?.addEventListener('click', () => {
+        updateFilterButtons('all');
+    });
+
+    // ปุ่มเพิ่มข้อมูลใหม่
+    document.getElementById('openExampleModal')?.addEventListener('click', () => {
+        openModal('exampleModal');
+    });
+
+    // ปุ่มปิด Modal
+    document.getElementById('closeExampleModal')?.addEventListener('click', () => {
+        closeModal('exampleModal');
+    });
 }
 
 function updateActiveFilters() {
@@ -709,6 +603,25 @@ function updateFilterResults(visibleCount) {
     }
 }
 
+// ================== ส่วนที่ 8: Spinner/Loading Overlay ==================
+// (ควรแยกไฟล์ js/loading.js)
+function showSpinner(show) {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) {
+        spinner.style.display = show ? 'flex' : 'none';
+    }
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+// ================== ส่วนที่ 9: Alert/Notification ==================
+// (ควรแยกไฟล์ js/alert.js)
 function showAlert(message, type = 'success') {
     const alertContainer = document.getElementById('alert-container');
     if (!alertContainer) return;
@@ -746,111 +659,39 @@ function getAlertColor(type) {
     }
 }
 
-function initializeFilterButtons() {
-    // ปุ่มกรอง Today
-    document.getElementById('todayButton')?.addEventListener('click', () => {
-        updateFilterButtons('today');
-    });
-
-    // ปุ่มแสดงทั้งหมด
-    document.getElementById('allListButton')?.addEventListener('click', () => {
-        updateFilterButtons('all');
-    });
-
-    // ปุ่มเพิ่มข้อมูลใหม่
-    document.getElementById('openExampleModal')?.addEventListener('click', () => {
-        openModal('exampleModal');
-    });
-
-    // ปุ่มปิด Modal
-    document.getElementById('closeExampleModal')?.addEventListener('click', () => {
-        closeModal('exampleModal');
-    });
-}
-
-// เพิ่มฟังก์ชันเปิด-ปิด Modal
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-
-    modal.classList.remove('hidden');
-    const modalContent = modal.querySelector('.bg-white');
-    if (modalContent) {
-        setTimeout(() => {
-            modalContent.classList.remove('scale-95', 'opacity-0');
-            modalContent.classList.add('scale-100', 'opacity-100');
-        }, 10);
-    }
-
-    // เพิ่ม event listener สำหรับการคลิกพื้นหลังเพื่อปิด modal
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModal(modalId);
+function setupAlertMessages() {
+    const alertContainer = document.getElementById('alert-container');
+    if (alertContainer?.children.length > 0) {
+        const alertMessage = alertContainer.querySelector('.alert-message');
+        if (alertMessage) {
+            setTimeout(() => {
+                alertMessage.style.opacity = '0';
+                alertMessage.style.transform = 'translateY(-20px)';
+                setTimeout(() => alertMessage.remove(), 300);
+            }, 5000);
         }
+    }
+}
+
+// ================== ส่วนที่ 10: Refresh Button ==================
+// (ควรแยกไฟล์ js/refresh.js)
+function handleRefresh() {
+    const button = document.getElementById('refreshData');
+    if (!button) return;
+
+    button.disabled = true;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
+
+    loadData().finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalContent;
+        document.getElementById('lastUpdate').textContent =
+            new Date().toLocaleString('th-TH');
     });
 }
 
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-
-    const modalContent = modal.querySelector('.bg-white');
-    if (modalContent) {
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
-    }
-
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300);
-}
-
-function updateEntryInfo(page, limit, total) {
-    const startEntry = ((page - 1) * limit) + 1;
-    const endEntry = Math.min(page * limit, total);
-
-    document.getElementById('startEntry').textContent = startEntry;
-    document.getElementById('endEntry').textContent = endEntry;
-    document.getElementById('totalEntries').textContent = total;
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    const alertMessage = document.getElementById('alert-message');
-    if (alertMessage) {
-        setTimeout(() => {
-            alertMessage.classList.add('fade-out');
-            setTimeout(() => alertMessage.remove(), 5000); // ลบออกจาก DOM หลังจากเอฟเฟกต์จบ
-        }, 5000); // 5 วินาที
-    }
-});
-
-// เปิด Loading
-function showLoading() {
-    document.getElementById('loadingOverlay').classList.remove('hidden');
-}
-
-// ปิด Loading
-function hideLoading() {
-    document.getElementById('loadingOverlay').classList.add('hidden');
-}
-
-// ตัวอย่างการใช้งาน
-async function fetchData() {
-    try {
-        showLoading(); // แสดง loading ก่อนโหลดข้อมูล
-
-        // จำลองการโหลดข้อมูล
-        await fetch('/api/data');
-
-    } catch (error) {
-        console.error('Error:', error);
-    } finally {
-        hideLoading(); // ซ่อน loading เมื่อโหลดเสร็จหรือมีข้อผิดพลาด
-    }
-}
-
-// เพิ่ม Event Listener สำหรับปุ่มรีเฟรช
-document.getElementById('refreshButton').addEventListener('click', function () {
+document.getElementById('refreshButton')?.addEventListener('click', function () {
     // แสดง loading spinner
     Swal.fire({
         title: 'กำลังรีเฟรชข้อมูล...',
@@ -868,7 +709,8 @@ document.getElementById('refreshButton').addEventListener('click', function () {
     }, 1000);
 });
 
-// Session timeout warning
+// ================== ส่วนที่ 11: Session Timeout ==================
+// (ควรแยกไฟล์ js/session.js)
 function setupSessionTimeout() {
     const warningTime = 25 * 60 * 1000; // 25 นาที
     const redirectTime = 30 * 60 * 1000; // 30 นาที
@@ -898,29 +740,8 @@ document.addEventListener('DOMContentLoaded', function () {
     setupSessionTimeout();
 });
 
-// ตัวอย่างการเรียก fetch API
-// const formData = new FormData();
-// formData.append('username', 'testuser');
-// formData.append('password', 'testpass');
-
-// fetch('login_process.php', {
-//     method: 'POST',
-//     body: formData
-// })
-//     .then(response => response.text()) // ใช้ text() ชั่วคราวเพื่อดู raw response
-//     .then(data => {
-//         // console.log('Raw Response:', data); // ตรวจสอบ response ที่ได้
-//         try {
-//             const jsonData = JSON.parse(data); // แปลงเป็น JSON
-//             // console.log('Parsed JSON:', jsonData); // ตรวจสอบ JSON ที่แปลงสำเร็จ
-//         } catch (error) {
-//             // console.error('JSON Parse Error:', error); // แจ้ง error หากแปลง JSON ไม่สำเร็จ
-//         }
-//     })
-//     .catch(error => {
-//         console.error('Fetch Error:', error); // แจ้ง error หาก fetch ล้มเหลว
-//     });
-
+// ================== ส่วนที่ 12: Pregnancy Number Logic ==================
+// (ควรแยกไฟล์ js/pregnancy.js)
 function updatePregnancyNumber() {
     const g = document.getElementById('modal-g')?.value || '';
     const p1 = document.getElementById('modal-p1')?.value || '0';
@@ -970,20 +791,8 @@ function updateAddPregnancyNumber() {
     if (el) el.addEventListener('input', updateAddPregnancyNumber);
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Modal Add
-    const hctAdd = document.getElementById('add-hct_last');
-    if (hctAdd) {
-        setHctBg(hctAdd);
-        hctAdd.addEventListener('input', function() { setHctBg(this); });
-    }
-    // Modal Show
-    const hctShow = document.getElementById('modal-hct_last');
-    if (hctShow) {
-        setHctBg(hctShow);
-        hctShow.addEventListener('input', function() { setHctBg(this); });
-    }
-});
+// ================== ส่วนที่ 13: HCT Logic ==================
+// (ควรแยกไฟล์ js/hct.js)
 function setHctBg(input) {
     let val = parseFloat(input.value);
     let bg = '';
@@ -999,31 +808,77 @@ function setHctBg(input) {
     input.className = 'w-24 px-3 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-400 ' + bg;
 }
 
-// ฟังก์ชันสำหรับแปลงค่า pregnancy_number เป็นค่าแยก G, P1, P2, P3, P4, last
-function parsePregnancyNumber(pregnancyNumber) {
-    // ตัวอย่าง: "G1P1111 last 1 ปี"
-    const result = { g: '', p1: '', p2: '', p3: '', p4: '', last: '' };
-    if (!pregnancyNumber) return result;
-    // ตรงกับ G1P1234 last 2 ปี หรือ G1P1234
-    const match = pregnancyNumber.match(/^G(\d+)P(\d)(\d)(\d)(\d)(?: last (\d+))?/);
-    if (match) {
-        result.g = match[1];
-        result.p1 = match[2];
-        result.p2 = match[3];
-        result.p3 = match[4];
-        result.p4 = match[5];
-        result.last = match[6] || '';
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal Add
+    const hctAdd = document.getElementById('add-hct_last');
+    if (hctAdd) {
+        setHctBg(hctAdd);
+        hctAdd.addEventListener('input', function() { setHctBg(this); });
     }
-    return result;
+    // Modal Show
+    const hctShow = document.getElementById('modal-hct_last');
+    if (hctShow) {
+        setHctBg(hctShow);
+        hctShow.addEventListener('input', function() { setHctBg(this); });
+    }
+});
+
+// ================== ส่วนที่ 14: Utility Functions ==================
+// (ควรแยกไฟล์ js/utils.js)
+function debounce(func, wait) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
 }
 
-function fillPregnancyFieldsFromNumber(pregnancyNumber) {
-    const parsed = parsePregnancyNumber(pregnancyNumber);
-    var el;
-    el = document.getElementById('modal-g');    if (el) el.value = parsed.g;
-    el = document.getElementById('modal-p1');   if (el) el.value = parsed.p1;
-    el = document.getElementById('modal-p2');   if (el) el.value = parsed.p2;
-    el = document.getElementById('modal-p3');   if (el) el.value = parsed.p3;
-    el = document.getElementById('modal-p4');   if (el) el.value = parsed.p4;
-    el = document.getElementById('modal-last'); if (el) el.value = parsed.last;
+function toggleModal(modal, show) {
+    modal.classList.toggle('hidden', !show);
+    modal.classList.toggle('flex', show);
 }
+
+function updateUrlState() {
+    const params = new URLSearchParams();
+    if (state.currentPage !== 1) params.set('page', state.currentPage);
+    if (state.itemsPerPage !== 10) params.set('limit', state.itemsPerPage);
+    if (state.filter !== 'all') params.set('filter', state.filter);
+
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    history.replaceState(null, '', newUrl);
+}
+
+function updateDisplayInfo() {
+    const start = Math.min(((state.currentPage - 1) * state.itemsPerPage) + 1, state.totalRecords);
+    const end = Math.min(state.currentPage * state.itemsPerPage, state.totalRecords);
+
+    const elements = {
+        startEntry: document.getElementById('startEntry'),
+        endEntry: document.getElementById('endEntry'),
+        totalEntries: document.getElementById('totalEntries'),
+        pageInfo: document.getElementById('pageInfo')
+    };
+
+    if (elements.startEntry) elements.startEntry.textContent = start;
+    if (elements.endEntry) elements.endEntry.textContent = end;
+    if (elements.totalEntries) elements.totalEntries.textContent = state.totalRecords;
+    if (elements.pageInfo) {
+        elements.pageInfo.textContent =
+            `หน้า ${state.currentPage} จาก ${Math.ceil(state.totalRecords / state.itemsPerPage)}`;
+    }
+}
+
+function updateEntryInfo(page, limit, total) {
+    const startEntry = ((page - 1) * limit) + 1;
+    const endEntry = Math.min(page * limit, total);
+
+    document.getElementById('startEntry').textContent = startEntry;
+    document.getElementById('endEntry').textContent = endEntry;
+    document.getElementById('totalEntries').textContent = total;
+}
+
+// ================== หมายเหตุ ==================
+// - ฟังก์ชันเกี่ยวกับ modal, pregnancy, hct, alert, filter, loading, session, pagination สามารถแยกไฟล์ย่อยได้
+// - ฟังก์ชันที่ซ้ำ (เช่น updateFilterButtons, attachPaginationEventListeners, setupModalEvents, initializeEventListeners, loadData, DOMContentLoaded) ควรรวมและจัดระเบียบใหม่
+// - ส่วน event listener ที่เกี่ยวกับ DOMContentLoaded มีหลายจุด ควรรวมเป็นจุดเดียวและแยก logic ไปไฟล์ย่อย
+// - ควรใช้ import/export (ES6 module) หรือ IIFE เพื่อป้องกันตัวแปรซ้อนทับและจัดการ scope

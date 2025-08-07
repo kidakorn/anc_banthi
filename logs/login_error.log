@@ -2902,3 +2902,13 @@ Stack trace:
 [05-Aug-2025 23:10:03 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
 [05-Aug-2025 23:10:03 Asia/Bangkok] Match result: Yes
 [05-Aug-2025 23:10:03 Asia/Bangkok] Login successful - User: coke
+[06-Aug-2025 23:49:56 Asia/Bangkok] Login attempt - Username: coke
+[06-Aug-2025 23:49:56 Asia/Bangkok] Login attempt details:
+[06-Aug-2025 23:49:56 Asia/Bangkok] Username: coke
+[06-Aug-2025 23:49:56 Asia/Bangkok] Password length: 10
+[06-Aug-2025 23:49:56 Asia/Bangkok] User found: Yes
+[06-Aug-2025 23:49:56 Asia/Bangkok] Password verification:
+[06-Aug-2025 23:49:56 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[06-Aug-2025 23:49:56 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[06-Aug-2025 23:49:56 Asia/Bangkok] Match result: Yes
+[06-Aug-2025 23:49:56 Asia/Bangkok] Login successful - User: coke

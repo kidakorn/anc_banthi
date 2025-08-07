@@ -1,4 +1,6 @@
 <?php
+// ================== ส่วนที่ 1: ตั้งค่าระบบและเชื่อมต่อฐานข้อมูล ==================
+// (ควรแยกไฟล์ config/database.php, config/logging.php)
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -28,6 +30,29 @@ try {
     die("Error: " . $e->getMessage());
 }
 
+// ================== ส่วนที่ 2: ตรวจสอบ session และสิทธิ์การเข้าใช้งาน ==================
+// (ควรแยกไฟล์ includes/session.php)
+try {
+    // ตรวจสอบ session ก่อนเริ่ม
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // แก้ไข path ให้ถูกต้อง
+    require_once __DIR__ . '/config/database_host.php';
+
+    // ตรวจสอบการ login
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: index.php');
+        exit();
+    }
+} catch (Exception $e) {
+    error_log("Error in home.php: " . $e->getMessage());
+    die("Error: " . $e->getMessage());
+}
+
+// ================== ส่วนที่ 3: โหลดฟังก์ชันและตั้งค่า session ==================
+// (ควรแยกไฟล์ includes/functions.php)
 require_once __DIR__ . '/includes/functions.php';
 
 // เพิ่ม debug log
@@ -57,7 +82,8 @@ if (!isset($pdo)) {
     die("Database connection not established.");
 }
 
-// โหลดฟังก์ชัน getRisks
+// ================== ส่วนที่ 4: โหลดข้อมูลความเสี่ยง ==================
+// (ควรแยกไฟล์ api/get_risks.php)
 require_once __DIR__ . '/api/get_risks.php';
 $risks = getRisks('GeneralRisks');
 $medicalRisks = getRisks('MedicalRisks');
@@ -69,7 +95,8 @@ error_log("Filter: " . print_r($_GET['filter'] ?? '', true));
 
 error_log("Risks data: " . print_r($risks, true));
 
-// ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
+// ================== ส่วนที่ 5: ฟังก์ชันแปลงวันที่เป็นภาษาไทย ==================
+// (ควรแยกไปไว้ใน includes/functions.php)
 function formatThaiDate($date)
 {
     if (empty($date) || $date == '0000-00-00') {
@@ -103,7 +130,8 @@ function formatThaiDate($date)
     return $month >= 1 && $month <= 12 ? "$day {$thai_months[$month]} $year" : '-';
 }
 
-// กำหนดช่วงวันที่ของสัปดาห์ปัจจุบัน
+// ================== ส่วนที่ 6: Query ข้อมูลสถิติประจำสัปดาห์และวันนี้ ==================
+// (ควรแยกไฟล์ includes/summary_queries.php)
 $start_of_week = date('Y-m-d', strtotime('monday this week'));
 $end_of_week = date('Y-m-d', strtotime('sunday this week'));
 
@@ -127,6 +155,8 @@ $stmt_today = $pdo->prepare("
 $stmt_today->execute();
 $total_today = $stmt_today->fetch()['total_today'] ?? 0;
 
+// ================== ส่วนที่ 7: รับค่าพารามิเตอร์และสร้างเงื่อนไขค้นหา ==================
+// (ควรแยกไฟล์ includes/query_params.php หรือรวมกับ includes/maincase_queries.php)
 
 // รับค่าพารามิเตอร์จาก URL
 $filter = $_GET['filter'] ?? 'this_week'; // กำหนดค่าเริ่มต้นเป็น 'this_week'
@@ -139,7 +169,7 @@ $offset = ($page - 1) * $limit;
 $where_conditions = ["1=1"];
 $params = [];
 
-// เงื่อนไขสำหรับการค้นหา
+// เงื่อนไขสำหรับการค้นหา (ค้นหาหลายฟิลด์)
 if (!empty($search)) {
     $where_conditions[] = "(
     fullname LIKE :search1 
@@ -158,14 +188,13 @@ if (!empty($search)) {
     OR phone_number LIKE :search14
     OR age LIKE :search15
 )";
-
     // เพิ่ม parameters สำหรับการค้นหา
     for ($i = 1; $i <= 15; $i++) {
         $params[":search$i"] = "%$search%";
     }
 }
 
-// เงื่อนไขสำหรับการกรอง
+// เงื่อนไขสำหรับการกรองสถานะ/ช่วงเวลา
 if ($filter === 'this_week') {
     $where_conditions[] = "DATE(edc_us) BETWEEN :start_of_week AND :end_of_week AND status = 'ฝากครรภ์'";
     $params[':start_of_week'] = $start_of_week;
@@ -181,20 +210,22 @@ if ($filter === 'this_week') {
 // รวมเงื่อนไขทั้งหมด
 $where_clause = implode(" AND ", $where_conditions);
 
+// ================== ส่วนที่ 8: Query ข้อมูลหลักและจัดการ pagination ==================
+// (ควรแยกไฟล์ includes/maincase_queries.php)
 try {
-    // Query count total records
+    // Query count total records (สำหรับ pagination)
     $stmt_count = $pdo->prepare("SELECT COUNT(*) as total FROM anc_maincase WHERE $where_clause");
 
     // Query data with pagination
     $stmt = $pdo->prepare("SELECT * FROM anc_maincase WHERE $where_clause ORDER BY first_antenatal_date DESC LIMIT :limit OFFSET :offset");
 
-    // Bind parameters for search and filter
+    // Bind parameters สำหรับ search/filter
     foreach ($params as $key => $value) {
         $stmt_count->bindValue($key, $value);
         $stmt->bindValue($key, $value);
     }
 
-    // Bind parameters for pagination
+    // Bind parameters สำหรับ pagination
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 
@@ -208,6 +239,7 @@ try {
     // Calculate total pages
     $totalPages = ceil($total / $limit);
 } catch (PDOException $e) {
+    // Logging error (ควรแยกฟังก์ชัน log)
     error_log("SQL Error: " . $e->getMessage());
     error_log("SQL Query: " . $stmt->queryString);
     error_log("Parameters: " . print_r($params, true));
@@ -219,7 +251,8 @@ try {
     ]));
 }
 
-// build pagination URL
+// ================== ส่วนที่ 9: ฟังก์ชันสร้าง pagination url ==================
+// (ควรแยกไปไว้ใน includes/functions.php)
 function buildPaginationUrl($page, $limit, $filter, $search)
 {
     $params = [];
@@ -236,6 +269,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
 <html lang="th">
 
 <head>
+    <!-- ================== ส่วนที่ 10: <head> และ assets ================== -->
+    <!-- (ควรแยกไฟล์ includes/header.php) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANC todo Risk</title>
@@ -332,7 +367,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
 
 <body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
 
-    <!-- Modern Navbar -->
+    <!-- ================== ส่วนที่ 11: Navbar ================== -->
+    <!-- (ควรแยกไฟล์ includes/navbar.php) -->
     <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200/60 transition-all duration-300">
         <div class="max-w-8xl mx-auto px-6">
             <div class="flex justify-between items-center h-20">
@@ -383,9 +419,11 @@ function buildPaginationUrl($page, $limit, $filter, $search)
         </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- ================== ส่วนที่ 12: Main Content ================== -->
     <div class="max-w-8xl mx-auto px-4 py-6">
-        <!-- Stats Cards -->
+
+        <!-- ===== 12.1: Stats Cards ===== -->
+        <!-- (ควรแยกไฟล์ includes/stats_cards.php) -->
         <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 px-4" data-aos="fade-up">
             <!-- Card: สัปดาห์นี้ -->
             <div class="bg-gradient-to-br from-green-100 via-white to-green-50 rounded-2xl shadow-lg p-7 border border-green-200/60 hover:scale-105 transition-transform duration-200 group relative overflow-hidden">
@@ -431,6 +469,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </div>
         </div>
 
+        <!-- ===== 12.2: Alert Message ===== -->
+        <!-- (ควรแยกไฟล์ includes/alert.php) -->
         <!-- แสดงข้อความแจ้งเตือน -->
         <div id="alert-container" class="fixed top-4 right-4 z-50">
             <?php if (isset($_SESSION['alert'])): ?>
@@ -439,8 +479,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
          text-white px-6 py-3 rounded-lg shadow-lg transition-transform transform duration-300 ease-in-out relative">
                     <?php foreach ($_SESSION['alert']['message'] as $msg): ?>
                         <div class="flex items-center gap-2 mb-1">
-                            <i
-                                class="fas fa-<?= $_SESSION['alert']['status'] === 'success' ? 'check' : 'exclamation' ?>-circle text-xl"></i>
+                            <i class="fas fa-<?= $_SESSION['alert']['status'] === 'success' ? 'check' : 'exclamation' ?>-circle text-xl"></i>
                             <span><?= htmlspecialchars($msg) ?></span>
                         </div>
                     <?php endforeach; ?>
@@ -453,9 +492,11 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             <?php endif; ?>
         </div>
 
+        <!-- ===== 12.3: Filter Buttons ===== -->
+        <!-- (ควรแยกไฟล์ includes/filter_buttons.php) -->
         <!-- ปุ่มกรอง -->
         <div class="flex flex-wrap justify-center gap-4 mb-8 px-4" data-aos="fade-up">
-        <button id="dueButton"
+            <button id="dueButton"
                 onclick="location.reload()"
                 class="flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl shadow-lg 
                 hover:from-blue-600 hover:to-blue-700 transform hover:-translate-y-1 transition-all duration-200
@@ -505,6 +546,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </button>
         </div>
 
+        <!-- ===== 12.4: Search & Filter Form ===== -->
+        <!-- (ควรแยกไฟล์ includes/search_form.php) -->
         <!-- ค้นหา (Modern UI) -->
         <div class="max-w-7xl mx-auto mb-8" data-aos="fade-up">
             <div class="bg-gradient-to-br from-gray-50 via-white to-gray-6 rounded-2xl shadow-xl p-8 border border-gray-200/40 hover:border-gray-400 transition">
@@ -574,6 +617,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </div>
         </div>
 
+        <!-- ===== 12.5: Data Table ===== -->
+        <!-- (ควรแยกไฟล์ includes/data_table.php) -->
         <!-- Modern Data Table -->
         <div class="px-4 pb-4" data-aos="fade-up">
             <div class="relative shadow-2xl rounded-3xl border border-blue-200 bg-gradient-to-br from-white via-blue-50 to-white">
@@ -588,14 +633,14 @@ function buildPaginationUrl($page, $limit, $filter, $search)
                                     ['label' => 'CID', 'icon' => 'fa-barcode', 'width' => '120px'],
                                     ['label' => 'อายุ', 'icon' => 'fa-id-card', 'width' => '100px'],
                                     ['label' => 'วันที่มาฝากครรภ์ครั้งแรก', 'icon' => 'fa-calendar-plus', 'width' => '180px'],
-                                    ['label' => 'ชื่อ-สกุล', 'icon' => 'fa-user', 'width' => '200px'],                                   
-                                    ['label' => 'ครรภ์ที่', 'icon' => 'fa-baby', 'width' => '100px'],                                   
-                                    ['label' => 'GA (อายุครรภ์)', 'icon' => 'fa-clock', 'width' => '100px'],                                
+                                    ['label' => 'ชื่อ-สกุล', 'icon' => 'fa-user', 'width' => '200px'],
+                                    ['label' => 'ครรภ์ที่', 'icon' => 'fa-baby', 'width' => '100px'],
+                                    ['label' => 'GA (อายุครรภ์)', 'icon' => 'fa-clock', 'width' => '100px'],
                                     ['label' => 'General Risk', 'icon' => 'fa-exclamation-triangle', 'width' => '100px'],
                                     ['label' => 'Med Risk', 'icon' => 'fa-exclamation-triangle', 'width' => '100px'],
                                     ['label' => 'Obs. Risk', 'icon' => 'fa-exclamation-triangle', 'width' => '100px'],
                                     ['label' => 'Other Risk', 'icon' => 'fa-exclamation', 'width' => '100px'],
-                                    ['label' => 'LAB Alert', 'icon' => 'fa-bell', 'width' => '120px'],                                                                    
+                                    ['label' => 'LAB Alert', 'icon' => 'fa-bell', 'width' => '120px'],
                                     ['label' => 'สถานะ', 'icon' => 'fa-info-circle', 'width' => '120px'],
                                     ['label' => 'รายละเอียด', 'icon' => 'fa-ellipsis-h', 'width' => '150px'],
                                 ];
@@ -651,7 +696,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
                                         <td class="py-3 px-4 border text-center"><?= htmlspecialchars($row['ga']) ?></td>
                                         <td class="py-3 px-4 border text-center">
                                             <?php
-                                                $risk_count = ($row['risk'] !== '' ? substr_count($row['risk'], ',') + 1 : 0);
+                                            $risk_count = ($row['risk'] !== '' ? substr_count($row['risk'], ',') + 1 : 0);
                                             ?>
                                             <?php if ($risk_count > 0): ?>
                                                 <span class="bg-red-100 text-red-700 font-bold px-2 py-1 rounded-lg shadow-sm">
@@ -666,7 +711,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
 
                                         <td class="py-3 px-4 border text-center">
                                             <?php
-                                                $risk_count = ($row['risk_medical'] !== '' ? substr_count($row['risk_medical'], ',') + 1 : 0);
+                                            $risk_count = ($row['risk_medical'] !== '' ? substr_count($row['risk_medical'], ',') + 1 : 0);
                                             ?>
                                             <?php if ($risk_count > 0): ?>
                                                 <span class="bg-red-100 text-red-700 font-bold px-2 py-1 rounded-lg shadow-sm">
@@ -682,7 +727,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
 
                                         <td class="py-3 px-4 border text-center">
                                             <?php
-                                                $risk_count = ($row['risk_obstetric'] !== '' ? substr_count($row['risk_obstetric'], ',') + 1 : 0);
+                                            $risk_count = ($row['risk_obstetric'] !== '' ? substr_count($row['risk_obstetric'], ',') + 1 : 0);
                                             ?>
                                             <?php if ($risk_count > 0): ?>
                                                 <span class="bg-red-100 text-red-700 font-bold px-2 py-1 rounded-lg shadow-sm">
@@ -778,6 +823,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </div>
         </div>
 
+        <!-- ===== 12.6: Pagination ===== -->
+        <!-- (ควรแยกไฟล์ includes/pagination.php) -->
         <!-- Modern Pagination -->
         <div class="mt-10 mb-16">
             <div class="max-w-7xl mx-auto px-4">
@@ -860,6 +907,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </div>
         </div>
 
+        <!-- ===== 12.7: Modal: Add Form ===== -->
+        <!-- (ควรแยกไฟล์ includes/modal_add.php) -->
         <!-- Modal ADD FORM (Modern UI) -->
         <div id="exampleModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex justify-center items-start pt-10 z-[60]">
             <div class="bg-white/90 rounded-3xl shadow-2xl w-11/12 max-w-[90vw] max-h-[92vh] overflow-y-auto relative custom-scrollbar mx-auto border border-teal-200/40">
@@ -1350,6 +1399,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </div>
         </div>
 
+        <!-- ===== 12.8: Modal: Show/Update ===== -->
+        <!-- (ควรแยกไฟล์ includes/modal_show.php) -->
         <!-- Modal Show (Modern UI) -->
         <div id="showModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex justify-center items-start pt-10 z-[60]">
             <div class="bg-white/90 rounded-3xl shadow-2xl w-11/12 max-w-[90vw] max-h-[92vh] overflow-y-auto relative custom-scrollbar mx-auto border border-teal-200/40">
@@ -1749,7 +1800,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
                                     }
                                 }
                                 this.className = 'w-24 px-3 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-400 ' + bg;
-                                ">
+                            ">
                                             <span class="px-3 py-2 bg-gray-100 rounded-lg">%</span>
                                             <input
                                                 type="date"
@@ -1868,6 +1919,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </div>
         </div>
 
+        <!-- ===== 12.9: Loading Overlay ===== -->
+        <!-- (ควรแยกไฟล์ includes/loading.php) -->
         <!-- เพิ่ม Loading State -->
         <div id="loadingOverlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[70] hidden">
             <div class="bg-white p-6 rounded-xl shadow-lg flex items-center gap-4">
@@ -1877,6 +1930,8 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             </div>
         </div>
 
+        <!-- ===== 12.10: Modal: Summary ===== -->
+        <!-- (ควรแยกไฟล์ includes/summary_modal.php) -->
         <!-- Modal Summary (Modern UI) -->
         <div id="summaryModal"
             class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden justify-center items-start pt-12 z-50 overflow-y-auto"
@@ -2070,13 +2125,16 @@ function buildPaginationUrl($page, $limit, $filter, $search)
 
     </div>
 
-    <!-- Footer -->
+    <!-- ================== ส่วนที่ 13: Footer ================== -->
+    <!-- (ควรแยกไฟล์ includes/footer.php) -->
     <footer class="py-4">
         <div class="container mx-auto text-center">
             <p class="text-gray-600">© 2025 ระบบติดตามการฝากครรภ์ | โรงพยาบาลบ้านธิ จังหวัดลำพูน</p>
         </div>
     </footer>
 
+    <!-- ================== ส่วนที่ 14: Script Includes ================== -->
+    <!-- (ควรแยกไฟล์ includes/scripts.php หรือ include เฉพาะไฟล์ที่จำเป็นในแต่ละหน้า) -->
     <script src="public/assets/js/main.js"></script>
     <script src="public/assets/js/summary.js"></script>
     <script src="public/assets/js/delete.js"></script>
@@ -2088,7 +2146,10 @@ function buildPaginationUrl($page, $limit, $filter, $search)
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
+    <!-- ================== ส่วนที่ 15: Inline Script (ควรย้ายไปไฟล์ JS) ================== -->
     <script>
+        // (ควรย้ายไป public/assets/js/main.js หรือไฟล์ JS ที่เกี่ยวข้อง)
         AOS.init({
             duration: 1000, // ระยะเวลาแอนิเมชัน (ms)
             once: true, // เล่นแอนิเมชันครั้งเดียว
@@ -2107,6 +2168,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
         });
     </script>
     <script>
+        // (ควรย้ายไป public/assets/js/risk.js)
         function toggleDropdown(id) {
             const dropdown = document.getElementById(id);
             dropdown.classList.toggle('hidden');
@@ -2145,7 +2207,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
         });
     </script>
     <script>
-        // ฟังก์ชันอัปเดตรายชื่อความเสี่ยงที่เลือก
+        // (ควรย้ายไป public/assets/js/risk.js)
         // ฟังก์ชันอัปเดตรายชื่อความเสี่ยงที่เลือก
         function updateRiskDisplay(checkboxName, displayId, defaultMessage) {
             const checkboxes = document.querySelectorAll(`input[name="${checkboxName}"]:checked`);
@@ -2214,6 +2276,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
             });
         });
     </script>
+    <!-- ================== END ================== -->
 </body>
 
 </html>
