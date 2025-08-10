@@ -18,17 +18,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusFilter = document.getElementById('statusFilter');
     const entriesPerPage = document.getElementById('entriesPerPage');
 
+     // เพิ่ม event listener สำหรับ date filter
+    document.getElementById('date_start')?.addEventListener('change', () => loadData(1));
+    document.getElementById('date_end')?.addEventListener('change', () => loadData(1));
+
     // ฟังก์ชันสำหรับโหลดข้อมูลใหม่
     function loadData(page = 1) {
         const search = document.getElementById('searchInput').value.trim();
         const filter = document.getElementById('statusFilter').value;
-        const limit = document.getElementById('entriesPerPage').value;
+        let limit = document.getElementById('entriesPerPage').value;
+        const date_start = document.getElementById('date_start')?.value || '';
+        const date_end = document.getElementById('date_end')?.value || '';
+
+        // ถ้ามีการเลือก date_start หรือ date_end ให้ limit = 'all'
+        if (date_start || date_end) {
+            limit = 'all';
+            // อัปเดต dropdown ให้แสดง 'all' ด้วย (ถ้ามี option นี้)
+            const entriesPerPage = document.getElementById('entriesPerPage');
+            if (entriesPerPage && entriesPerPage.value !== 'all') {
+                entriesPerPage.value = 'all';
+            }
+        }
 
         const params = new URLSearchParams({
             search,
             filter,
             limit,
-            page
+            page,
+            date_start,
+            date_end
         });
 
         fetch(`home.php?${params.toString()}`)
@@ -61,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('endEntry').textContent = endEntry.textContent;
                     document.getElementById('totalEntries').textContent = totalEntries.textContent;
                 }
+
+                // ซ่อน query string ออกจาก URL
+                window.history.replaceState({}, '', 'home.php');
             })
             .catch(error => console.error('Error loading data:', error));
     }
@@ -170,7 +191,19 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadData(page = 1) {
     const search = document.getElementById('searchInput').value.trim();
     const filter = document.getElementById('statusFilter').value;
-    const limit = document.getElementById('entriesPerPage').value;
+    let limit = document.getElementById('entriesPerPage').value;
+    const date_start = document.getElementById('date_start')?.value || '';
+    const date_end = document.getElementById('date_end')?.value || '';
+
+    // ถ้ามีการเลือก date_start หรือ date_end ให้ limit = 'all'
+    if (date_start || date_end) {
+        limit = 'all';
+        // อัปเดต dropdown ให้แสดง 'all' ด้วย (ถ้ามี option นี้)
+        const entriesPerPage = document.getElementById('entriesPerPage');
+        if (entriesPerPage && entriesPerPage.value !== 'all') {
+            entriesPerPage.value = 'all';
+        }
+    }
 
     const params = new URLSearchParams({
         search,
@@ -220,7 +253,7 @@ function initializeEventListeners() {
     document.getElementById('todayButton')?.addEventListener('click', () => {
         // ใช้ replaceState เพื่อลบพารามิเตอร์ออกจาก URL
         window.history.replaceState({}, '', 'home.php');
-        
+
         fetch('home.php?filter=today')
             .then(response => response.text())
             .then(html => {
@@ -786,7 +819,7 @@ function updateAddPregnancyNumber() {
 }
 
 // ผูก event กับ input ทุกตัวในกลุ่ม G-P-A-L-last ของ Modal ADD
-['g','p1','p2','p3','p4','last'].forEach(name => {
+['g', 'p1', 'p2', 'p3', 'p4', 'last'].forEach(name => {
     const el = document.querySelector(`#exampleModal input[name="${name}"]`);
     if (el) el.addEventListener('input', updateAddPregnancyNumber);
 });
@@ -808,18 +841,18 @@ function setHctBg(input) {
     input.className = 'w-24 px-3 py-2 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-400 ' + bg;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Modal Add
     const hctAdd = document.getElementById('add-hct_last');
     if (hctAdd) {
         setHctBg(hctAdd);
-        hctAdd.addEventListener('input', function() { setHctBg(this); });
+        hctAdd.addEventListener('input', function () { setHctBg(this); });
     }
     // Modal Show
     const hctShow = document.getElementById('modal-hct_last');
     if (hctShow) {
         setHctBg(hctShow);
-        hctShow.addEventListener('input', function() { setHctBg(this); });
+        hctShow.addEventListener('input', function () { setHctBg(this); });
     }
 });
 
@@ -880,5 +913,5 @@ function updateEntryInfo(page, limit, total) {
 // ================== หมายเหตุ ==================
 // - ฟังก์ชันเกี่ยวกับ modal, pregnancy, hct, alert, filter, loading, session, pagination สามารถแยกไฟล์ย่อยได้
 // - ฟังก์ชันที่ซ้ำ (เช่น updateFilterButtons, attachPaginationEventListeners, setupModalEvents, initializeEventListeners, loadData, DOMContentLoaded) ควรรวมและจัดระเบียบใหม่
-// - ส่วน event listener ที่เกี่ยวกับ DOMContentLoaded มีหลายจุด ควรรวมเป็นจุดเดียวและแยก logic ไปไฟล์ย่อย
+// - ส่วน event listener ที่เกี่ยวกับ DOMContentLoaded มีหลายจุด ควรเรียกใช้แค่จุดเดียว
 // - ควรใช้ import/export (ES6 module) หรือ IIFE เพื่อป้องกันตัวแปรซ้อนทับและจัดการ scope

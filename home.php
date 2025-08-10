@@ -159,10 +159,16 @@ $total_today = $stmt_today->fetch()['total_today'] ?? 0;
 // (ควรแยกไฟล์ includes/query_params.php หรือรวมกับ includes/maincase_queries.php)
 
 // รับค่าพารามิเตอร์จาก URL
-$filter = $_GET['filter'] ?? 'this_week'; // กำหนดค่าเริ่มต้นเป็น 'this_week'
+$date_start = $_GET['date_start'] ?? '';
+$date_end = $_GET['date_end'] ?? '';
+$filter = $_GET['filter'] ?? 'this_week';
 $search = $_GET['search'] ?? '';
 $page = max((int)($_GET['page'] ?? 1), 1);
-$limit = max((int)($_GET['limit'] ?? 10), 1);
+$limit = ($_GET['limit'] ?? 10);
+if ($limit === 'all') {
+    $limit = 10000; // หรือจำนวนสูงสุดที่ต้องการ
+}
+$limit = max((int)$limit, 1);
 $offset = ($page - 1) * $limit;
 
 // สร้างเงื่อนไขการค้นหาและกรอง
@@ -195,16 +201,29 @@ if (!empty($search)) {
 }
 
 // เงื่อนไขสำหรับการกรองสถานะ/ช่วงเวลา
-if ($filter === 'this_week') {
-    $where_conditions[] = "DATE(edc_us) BETWEEN :start_of_week AND :end_of_week AND status = 'ฝากครรภ์'";
-    $params[':start_of_week'] = $start_of_week;
-    $params[':end_of_week'] = $end_of_week;
-} elseif ($filter === 'today') {
-    $where_conditions[] = "DATE(edc_us) = :today AND status = 'ฝากครรภ์'";
-    $params[':today'] = date('Y-m-d');
-} elseif (!empty($filter) && $filter !== 'all') {
-    $where_conditions[] = "status = :filter";
-    $params[':filter'] = $filter;
+if (!empty($date_start) && !empty($date_end)) {
+    $where_conditions[] = "DATE(first_antenatal_date) BETWEEN :date_start AND :date_end";
+    $params[':date_start'] = $date_start;
+    $params[':date_end'] = $date_end;
+} elseif (!empty($date_start)) {
+    $where_conditions[] = "DATE(first_antenatal_date) >= :date_start";
+    $params[':date_start'] = $date_start;
+} elseif (!empty($date_end)) {
+    $where_conditions[] = "DATE(first_antenatal_date) <= :date_end";
+    $params[':date_end'] = $date_end;
+} else {
+    // ถ้าไม่ได้เลือกช่วงวันที่ ให้ใช้ filter สถานะ/ช่วงเวลา
+    if ($filter === 'this_week') {
+        $where_conditions[] = "DATE(edc_us) BETWEEN :start_of_week AND :end_of_week AND status = 'ฝากครรภ์'";
+        $params[':start_of_week'] = $start_of_week;
+        $params[':end_of_week'] = $end_of_week;
+    } elseif ($filter === 'today') {
+        $where_conditions[] = "DATE(edc_us) = :today AND status = 'ฝากครรภ์'";
+        $params[':today'] = date('Y-m-d');
+    } elseif (!empty($filter) && $filter !== 'all') {
+        $where_conditions[] = "status = :filter";
+        $params[':filter'] = $filter;
+    }
 }
 
 // รวมเงื่อนไขทั้งหมด
@@ -262,6 +281,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
     if (!empty($search)) $params['search'] = $search;
     return 'home.php' . (!empty($params) ? '?' . http_build_query($params) : '');
 }
+
 
 ?>
 
@@ -594,6 +614,7 @@ function buildPaginationUrl($page, $limit, $filter, $search)
                                 <option value="25" <?= $limit == 25 ? 'selected' : '' ?>>25 รายการ</option>
                                 <option value="50" <?= $limit == 50 ? 'selected' : '' ?>>50 รายการ</option>
                                 <option value="100" <?= $limit == 100 ? 'selected' : '' ?>>100 รายการ</option>
+                                <option value="all" <?= $limit == 'all' ? 'selected' : '' ?>>รายการทั้งหมด</option>
                             </select>
                         </div>
                         <div>
@@ -613,6 +634,12 @@ function buildPaginationUrl($page, $limit, $filter, $search)
                             </select>
                         </div>
                     </div>
+
+                    <!-- Date Filter -->
+                    <div class="flex flex-col sm:flex-row gap-6 w-full md:w-auto">
+                        <?php include 'includes/date_filter.php'; ?>
+                    </div>
+
                 </div>
             </div>
         </div>

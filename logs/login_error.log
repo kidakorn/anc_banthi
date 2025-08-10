@@ -2912,3 +2912,83 @@ Stack trace:
 [06-Aug-2025 23:49:56 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
 [06-Aug-2025 23:49:56 Asia/Bangkok] Match result: Yes
 [06-Aug-2025 23:49:56 Asia/Bangkok] Login successful - User: coke
+[07-Aug-2025 22:40:25 Asia/Bangkok] Login attempt - Username: coke
+[07-Aug-2025 22:40:25 Asia/Bangkok] Login attempt details:
+[07-Aug-2025 22:40:25 Asia/Bangkok] Username: coke
+[07-Aug-2025 22:40:25 Asia/Bangkok] Password length: 10
+[07-Aug-2025 22:40:25 Asia/Bangkok] User found: Yes
+[07-Aug-2025 22:40:25 Asia/Bangkok] Password verification:
+[07-Aug-2025 22:40:25 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[07-Aug-2025 22:40:25 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[07-Aug-2025 22:40:25 Asia/Bangkok] Match result: Yes
+[07-Aug-2025 22:40:25 Asia/Bangkok] Login successful - User: coke
+[07-Aug-2025 23:37:47 Asia/Bangkok] Login attempt - Username: coke
+[07-Aug-2025 23:37:47 Asia/Bangkok] Login attempt details:
+[07-Aug-2025 23:37:47 Asia/Bangkok] Username: coke
+[07-Aug-2025 23:37:47 Asia/Bangkok] Password length: 10
+[07-Aug-2025 23:37:47 Asia/Bangkok] User found: Yes
+[07-Aug-2025 23:37:47 Asia/Bangkok] Password verification:
+[07-Aug-2025 23:37:47 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[07-Aug-2025 23:37:47 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[07-Aug-2025 23:37:47 Asia/Bangkok] Match result: Yes
+[07-Aug-2025 23:37:47 Asia/Bangkok] Login successful - User: coke
+[07-Aug-2025 23:39:23 Asia/Bangkok] Login attempt - Username: coke
+[07-Aug-2025 23:39:23 Asia/Bangkok] Login attempt details:
+[07-Aug-2025 23:39:23 Asia/Bangkok] Username: coke
+[07-Aug-2025 23:39:23 Asia/Bangkok] Password length: 10
+[07-Aug-2025 23:39:23 Asia/Bangkok] User found: Yes
+[07-Aug-2025 23:39:23 Asia/Bangkok] Password verification:
+[07-Aug-2025 23:39:23 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[07-Aug-2025 23:39:23 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[07-Aug-2025 23:39:23 Asia/Bangkok] Match result: Yes
+[07-Aug-2025 23:39:23 Asia/Bangkok] Login successful - User: coke
+[10-Aug-2025 21:06:02 Asia/Bangkok] Login attempt - Username: coke
+[10-Aug-2025 21:06:03 Asia/Bangkok] Login attempt details:
+[10-Aug-2025 21:06:03 Asia/Bangkok] Username: coke
+[10-Aug-2025 21:06:03 Asia/Bangkok] Password length: 10
+[10-Aug-2025 21:06:03 Asia/Bangkok] User found: Yes
+[10-Aug-2025 21:06:03 Asia/Bangkok] Password verification:
+[10-Aug-2025 21:06:03 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 21:06:03 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 21:06:03 Asia/Bangkok] Match result: Yes
+[10-Aug-2025 21:06:03 Asia/Bangkok] Login successful - User: coke
+[10-Aug-2025 21:20:41 Asia/Bangkok] Login attempt - Username: coke
+[10-Aug-2025 21:20:41 Asia/Bangkok] Login attempt details:
+[10-Aug-2025 21:20:41 Asia/Bangkok] Username: coke
+[10-Aug-2025 21:20:41 Asia/Bangkok] Password length: 10
+[10-Aug-2025 21:20:41 Asia/Bangkok] User found: Yes
+[10-Aug-2025 21:20:41 Asia/Bangkok] Password verification:
+[10-Aug-2025 21:20:41 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 21:20:41 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 21:20:41 Asia/Bangkok] Match result: Yes
+[10-Aug-2025 21:20:41 Asia/Bangkok] Login successful - User: coke
+[10-Aug-2025 21:54:03 Asia/Bangkok] Login attempt - Username: coke
+[10-Aug-2025 21:54:03 Asia/Bangkok] Login attempt details:
+[10-Aug-2025 21:54:03 Asia/Bangkok] Username: coke
+[10-Aug-2025 21:54:03 Asia/Bangkok] Password length: 10
+[10-Aug-2025 21:54:03 Asia/Bangkok] User found: Yes
+[10-Aug-2025 21:54:03 Asia/Bangkok] Password verification:
+[10-Aug-2025 21:54:03 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 21:54:03 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 21:54:03 Asia/Bangkok] Match result: Yes
+[10-Aug-2025 21:54:03 Asia/Bangkok] Login successful - User: coke
+[10-Aug-2025 22:06:24 Asia/Bangkok] Login attempt - Username: coke
+[10-Aug-2025 22:06:25 Asia/Bangkok] Login attempt details:
+[10-Aug-2025 22:06:25 Asia/Bangkok] Username: coke
+[10-Aug-2025 22:06:25 Asia/Bangkok] Password length: 10
+[10-Aug-2025 22:06:25 Asia/Bangkok] User found: Yes
+[10-Aug-2025 22:06:25 Asia/Bangkok] Password verification:
+[10-Aug-2025 22:06:25 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 22:06:25 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 22:06:25 Asia/Bangkok] Match result: Yes
+[10-Aug-2025 22:06:25 Asia/Bangkok] Login successful - User: coke
+[10-Aug-2025 22:20:15 Asia/Bangkok] Login attempt - Username: coke
+[10-Aug-2025 22:20:15 Asia/Bangkok] Login attempt details:
+[10-Aug-2025 22:20:15 Asia/Bangkok] Username: coke
+[10-Aug-2025 22:20:15 Asia/Bangkok] Password length: 10
+[10-Aug-2025 22:20:15 Asia/Bangkok] User found: Yes
+[10-Aug-2025 22:20:15 Asia/Bangkok] Password verification:
+[10-Aug-2025 22:20:15 Asia/Bangkok] Input password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 22:20:15 Asia/Bangkok] Stored password hash: 28abbc4512cc0d6738e3b815ea4db4b3
+[10-Aug-2025 22:20:15 Asia/Bangkok] Match result: Yes
+[10-Aug-2025 22:20:15 Asia/Bangkok] Login successful - User: coke
